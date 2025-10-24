@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentEasy - Vehicle Rental Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-full">
+    <div id="app" class="min-h-full">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-blue-600 cursor-pointer" onclick="showPage('home')">🚗 RentEasy</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div id="nav-user" class="hidden">
+                            <span id="user-name" class="text-gray-700 mr-4"></span>
+                            <button onclick="showPage('dashboard')" class="text-blue-600 hover:text-blue-800 mr-4">My Bookings</button>
+                            <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Logout</button>
+                        </div>
+                        <div id="nav-guest">
+                            <button onclick="showPage('login')" class="text-blue-600 hover:text-blue-800 mr-4">Login</button>
+                            <button onclick="showPage('register')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Sign Up</button>
+                        </div>
+                        <div id="nav-admin" class="hidden">
+                            <button onclick="showPage('admin')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Admin Panel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Home Page -->
+            <div id="page-home" class="page">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Find Your Perfect Ride</h2>
+                    <p class="text-xl text-gray-600 mb-8">Rent cars and bikes easily with our simple booking system</p>
+                    
+                    <!-- Filters -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-8 max-w-4xl mx-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <select id="filter-type" onchange="applyFilters()" class="border border-gray-300 rounded-lg px-4 py-2">
+                                <option value="">All Types</option>
+                                <option value="car">Cars</option>
+                                <option value="bike">Bikes</option>
+                            </select>
+                            <select id="filter-location" onchange="applyFilters()" class="border border-gray-300 rounded-lg px-4 py-2">
+                                <option value="">All Locations</option>
+                                <option value="downtown">Downtown</option>
+                                <option value="airport">Airport</option>
+                                <option value="suburbs">Suburbs</option>
+                            </select>
+                            <input type="number" id="filter-max-price" placeholder="Max Price/day" onchange="applyFilters()" class="border border-gray-300 rounded-lg px-4 py-2">
+                            <button onclick="clearFilters()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle Grid -->
+                <div id="vehicle-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Vehicles will be populated here -->
+                </div>
+            </div>
+
+            <!-- Login Page -->
+            <div id="page-login" class="page hidden">
+                <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-2xl font-bold text-center mb-6">Login to RentEasy</h2>
+                    <form onsubmit="handleLogin(event)">
+                        <div class="mb-4">
+                            <label for="login-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="login-email" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div class="mb-6">
+                            <label for="login-password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" id="login-password" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium">Login</button>
+                    </form>
+                    <p class="text-center mt-4 text-gray-600">
+                        Don't have an account? 
+                        <button onclick="showPage('register')" class="text-blue-600 hover:underline">Sign up</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Register Page -->
+            <div id="page-register" class="page hidden">
+                <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-8">
+                    <h2 class="text-2xl font-bold text-center mb-6">Create Account</h2>
+                    <form onsubmit="handleRegister(event)">
+                        <div class="mb-4">
+                            <label for="register-name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                            <input type="text" id="register-name" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div class="mb-4">
+                            <label for="register-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="register-email" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div class="mb-4">
+                            <label for="register-phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                            <input type="tel" id="register-phone" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div class="mb-6">
+                            <label for="register-password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" id="register-password" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium">Create Account</button>
+                    </form>
+                    <p class="text-center mt-4 text-gray-600">
+                        Already have an account? 
+                        <button onclick="showPage('login')" class="text-blue-600 hover:underline">Login</button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- User Dashboard -->
+            <div id="page-dashboard" class="page hidden">
+                <h2 class="text-3xl font-bold mb-8">My Bookings</h2>
+                <div id="user-bookings" class="space-y-4">
+                    <!-- User bookings will be populated here -->
+                </div>
+            </div>
+
+            <!-- Admin Dashboard -->
+            <div id="page-admin" class="page hidden">
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold">Admin Dashboard</h2>
+                        <button onclick="showAddVehicleModal()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">Add Vehicle</button>
+                    </div>
+                    
+                    <!-- Admin Tabs -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-8">
+                            <button onclick="showAdminTab('vehicles')" id="tab-vehicles" class="admin-tab active border-b-2 border-blue-500 py-2 px-1 text-blue-600 font-medium">Vehicles</button>
+                            <button onclick="showAdminTab('bookings')" id="tab-bookings" class="admin-tab border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">All Bookings</button>
+                        </nav>
+                    </div>
+
+                    <!-- Vehicles Tab -->
+                    <div id="admin-vehicles" class="admin-content">
+                        <div id="admin-vehicle-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Admin vehicle list will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Bookings Tab -->
+                    <div id="admin-bookings" class="admin-content hidden">
+                        <div id="admin-booking-list" class="space-y-4">
+                            <!-- Admin booking list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Vehicle Details Modal -->
+        <div id="vehicle-modal" class="fixed inset-0 modal-backdrop hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-full overflow-y-auto">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 id="modal-vehicle-name" class="text-2xl font-bold"></h3>
+                            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                        </div>
+                        <div id="modal-vehicle-content">
+                            <!-- Vehicle details will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Vehicle Modal -->
+        <div id="add-vehicle-modal" class="fixed inset-0 modal-backdrop hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-bold">Add New Vehicle</h3>
+                            <button onclick="closeAddVehicleModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                        </div>
+                        <form onsubmit="handleAddVehicle(event)">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="vehicle-name" class="block text-sm font-medium text-gray-700 mb-1">Vehicle Name</label>
+                                    <input type="text" id="vehicle-name" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                </div>
+                                <div>
+                                    <label for="vehicle-type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                    <select id="vehicle-type" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="car">Car</option>
+                                        <option value="bike">Bike</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="vehicle-location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                                    <select id="vehicle-location" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                        <option value="downtown">Downtown</option>
+                                        <option value="airport">Airport</option>
+                                        <option value="suburbs">Suburbs</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="vehicle-price" class="block text-sm font-medium text-gray-700 mb-1">Price per Day ($)</label>
+                                    <input type="number" id="vehicle-price" required min="1" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                </div>
+                                <div>
+                                    <label for="vehicle-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <textarea id="vehicle-description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2"></textarea>
+                                </div>
+                            </div>
+                            <div class="flex justify-end space-x-3 mt-6">
+                                <button type="button" onclick="closeAddVehicleModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Add Vehicle</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Modal -->
+        <div id="booking-modal" class="fixed inset-0 modal-backdrop hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-xl font-bold">Book Vehicle</h3>
+                            <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                        </div>
+                        <form onsubmit="handleBooking(event)">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="pickup-date" class="block text-sm font-medium text-gray-700 mb-1">Pickup Date</label>
+                                    <input type="date" id="pickup-date" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                </div>
+                                <div>
+                                    <label for="return-date" class="block text-sm font-medium text-gray-700 mb-1">Return Date</label>
+                                    <input type="date" id="return-date" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                </div>
+                                <div id="booking-summary" class="bg-gray-50 p-4 rounded-lg">
+                                    <!-- Booking summary will be populated here -->
+                                </div>
+                            </div>
+                            <div class="flex justify-end space-x-3 mt-6">
+                                <button type="button" onclick="closeBookingModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Book Now (Pay on Pickup)</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+            <!-- Toast messages will appear here -->
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let currentUser = null;
+        let currentVehicle = null;
+        let vehicles = [
+            {
+                id: 1,
+                name: "Toyota Camry",
+                type: "car",
+                location: "downtown",
+                price: 45,
+                description: "Comfortable sedan perfect for city driving and long trips.",
+                available: true,
+                image: "🚗"
+            },
+            {
+                id: 2,
+                name: "Honda Civic",
+                type: "car",
+                location: "airport",
+                price: 40,
+                description: "Reliable and fuel-efficient compact car.",
+                available: true,
+                image: "🚙"
+            },
+            {
+                id: 3,
+                name: "Yamaha MT-07",
+                type: "bike",
+                location: "downtown",
+                price: 25,
+                description: "Sporty motorcycle for adventure seekers.",
+                available: true,
+                image: "🏍️"
+            },
+            {
+                id: 4,
+                name: "BMW X5",
+                type: "car",
+                location: "suburbs",
+                price: 80,
+                description: "Luxury SUV with premium features and spacious interior.",
+                available: true,
+                image: "🚐"
+            },
+            {
+                id: 5,
+                name: "Harley Davidson",
+                type: "bike",
+                location: "airport",
+                price: 60,
+                description: "Classic cruiser motorcycle for the ultimate riding experience.",
+                available: true,
+                image: "🏍️"
+            }
+        ];
+        
+        let bookings = [];
+        let users = [
+            { id: 1, name: "Admin User", email: "admin@renteasy.com", phone: "555-0000", password: "admin123", role: "admin" }
+        ];
+        let nextVehicleId = 6;
+        let nextBookingId = 1;
+        let nextUserId = 2;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('pickup-date').min = today;
+            document.getElementById('return-date').min = today;
+            
+            // Update return date minimum when pickup date changes
+            document.getElementById('pickup-date').addEventListener('change', function() {
+                document.getElementById('return-date').min = this.value;
+            });
+            
+            checkAuth();
+            renderVehicles();
+        });
+
+        // Authentication functions
+        function checkAuth() {
+            const userData = localStorage.getItem('currentUser');
+            if (userData) {
+                currentUser = JSON.parse(userData);
+                updateNavigation();
+            }
+        }
+
+        function updateNavigation() {
+            const navUser = document.getElementById('nav-user');
+            const navGuest = document.getElementById('nav-guest');
+            const navAdmin = document.getElementById('nav-admin');
+            const userName = document.getElementById('user-name');
+
+            if (currentUser) {
+                navUser.classList.remove('hidden');
+                navGuest.classList.add('hidden');
+                userName.textContent = `Welcome, ${currentUser.name}`;
+                
+                if (currentUser.role === 'admin') {
+                    navAdmin.classList.remove('hidden');
+                } else {
+                    navAdmin.classList.add('hidden');
+                }
+            } else {
+                navUser.classList.add('hidden');
+                navGuest.classList.remove('hidden');
+                navAdmin.classList.add('hidden');
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            const user = users.find(u => u.email === email && u.password === password);
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                updateNavigation();
+                showToast('Login successful!', 'success');
+                showPage('home');
+            } else {
+                showToast('Invalid email or password', 'error');
+            }
+        }
+
+        function handleRegister(event) {
+            event.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const phone = document.getElementById('register-phone').value;
+            const password = document.getElementById('register-password').value;
+
+            if (users.find(u => u.email === email)) {
+                showToast('Email already exists', 'error');
+                return;
+            }
+
+            const newUser = {
+                id: nextUserId++,
+                name,
+                email,
+                phone,
+                password,
+                role: 'user'
+            };
+
+            users.push(newUser);
+            currentUser = newUser;
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+            updateNavigation();
+            showToast('Account created successfully!', 'success');
+            showPage('home');
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            updateNavigation();
+            showToast('Logged out successfully', 'success');
+            showPage('home');
+        }
+
+        // Page navigation
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.add('hidden');
+            });
+
+            // Show selected page
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+                targetPage.classList.add('fade-in');
+            }
+
+            // Load page-specific content
+            if (pageId === 'dashboard' && currentUser) {
+                renderUserBookings();
+            } else if (pageId === 'admin' && currentUser && currentUser.role === 'admin') {
+                renderAdminContent();
+            }
+        }
+
+        // Vehicle functions
+        function renderVehicles(filteredVehicles = null) {
+            const vehiclesToRender = filteredVehicles || vehicles;
+            const grid = document.getElementById('vehicle-grid');
+            
+            if (vehiclesToRender.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500">No vehicles found matching your criteria.</div>';
+                return;
+            }
+
+            grid.innerHTML = vehiclesToRender.map(vehicle => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    <div class="p-6">
+                        <div class="text-6xl text-center mb-4">${vehicle.image}</div>
+                        <h3 class="text-xl font-semibold mb-2">${vehicle.name}</h3>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600 capitalize">${vehicle.type}</span>
+                            <span class="text-sm text-gray-600 capitalize">${vehicle.location}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">${vehicle.description}</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-blue-600">$${vehicle.price}/day</span>
+                            <div class="space-x-2">
+                                <button onclick="showVehicleDetails(${vehicle.id})" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">View Details</button>
+                                ${vehicle.available ? 
+                                    `<button onclick="startBooking(${vehicle.id})" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">Book Now</button>` :
+                                    `<span class="bg-gray-400 text-white px-4 py-2 rounded-lg text-sm">Unavailable</span>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function applyFilters() {
+            const typeFilter = document.getElementById('filter-type').value;
+            const locationFilter = document.getElementById('filter-location').value;
+            const maxPriceFilter = document.getElementById('filter-max-price').value;
+
+            let filtered = vehicles.filter(vehicle => {
+                if (typeFilter && vehicle.type !== typeFilter) return false;
+                if (locationFilter && vehicle.location !== locationFilter) return false;
+                if (maxPriceFilter && vehicle.price > parseInt(maxPriceFilter)) return false;
+                return true;
+            });
+
+            renderVehicles(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('filter-type').value = '';
+            document.getElementById('filter-location').value = '';
+            document.getElementById('filter-max-price').value = '';
+            renderVehicles();
+        }
+
+        function showVehicleDetails(vehicleId) {
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            if (!vehicle) return;
+
+            document.getElementById('modal-vehicle-name').textContent = vehicle.name;
+            document.getElementById('modal-vehicle-content').innerHTML = `
+                <div class="text-center mb-6">
+                    <div class="text-8xl mb-4">${vehicle.image}</div>
+                </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <span class="font-medium">Type:</span>
+                            <span class="capitalize ml-2">${vehicle.type}</span>
+                        </div>
+                        <div>
+                            <span class="font-medium">Location:</span>
+                            <span class="capitalize ml-2">${vehicle.location}</span>
+                        </div>
+                        <div>
+                            <span class="font-medium">Price:</span>
+                            <span class="ml-2 text-blue-600 font-bold">$${vehicle.price}/day</span>
+                        </div>
+                        <div>
+                            <span class="font-medium">Status:</span>
+                            <span class="ml-2 ${vehicle.available ? 'text-green-600' : 'text-red-600'}">${vehicle.available ? 'Available' : 'Unavailable'}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-medium">Description:</span>
+                        <p class="mt-2 text-gray-600">${vehicle.description}</p>
+                    </div>
+                    ${vehicle.available ? `
+                        <div class="pt-4 border-t">
+                            <button onclick="startBooking(${vehicle.id}); closeModal();" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium">Book This Vehicle</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('vehicle-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('vehicle-modal').classList.add('hidden');
+        }
+
+        // Booking functions
+        function startBooking(vehicleId) {
+            if (!currentUser) {
+                showToast('Please login to book a vehicle', 'error');
+                showPage('login');
+                return;
+            }
+
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            if (!vehicle || !vehicle.available) {
+                showToast('Vehicle is not available', 'error');
+                return;
+            }
+
+            currentVehicle = vehicle;
+            updateBookingSummary();
+            document.getElementById('booking-modal').classList.remove('hidden');
+        }
+
+        function updateBookingSummary() {
+            const pickupDate = document.getElementById('pickup-date').value;
+            const returnDate = document.getElementById('return-date').value;
+            const summaryDiv = document.getElementById('booking-summary');
+
+            if (!currentVehicle) return;
+
+            let summaryHTML = `
+                <h4 class="font-medium mb-2">${currentVehicle.name}</h4>
+                <div class="text-sm text-gray-600 space-y-1">
+                    <div>Type: <span class="capitalize">${currentVehicle.type}</span></div>
+                    <div>Location: <span class="capitalize">${currentVehicle.location}</span></div>
+                    <div>Price per day: $${currentVehicle.price}</div>
+            `;
+
+            if (pickupDate && returnDate) {
+                const pickup = new Date(pickupDate);
+                const returnD = new Date(returnDate);
+                const days = Math.ceil((returnD - pickup) / (1000 * 60 * 60 * 24));
+                
+                if (days > 0) {
+                    const total = days * currentVehicle.price;
+                    summaryHTML += `
+                        <div class="border-t pt-2 mt-2">
+                            <div>Duration: ${days} day${days > 1 ? 's' : ''}</div>
+                            <div class="font-bold text-lg">Total: $${total}</div>
+                        </div>
+                    `;
+                }
+            }
+
+            summaryHTML += '</div>';
+            summaryDiv.innerHTML = summaryHTML;
+        }
+
+        // Update summary when dates change
+        document.getElementById('pickup-date').addEventListener('change', updateBookingSummary);
+        document.getElementById('return-date').addEventListener('change', updateBookingSummary);
+
+        function handleBooking(event) {
+            event.preventDefault();
+            const pickupDate = document.getElementById('pickup-date').value;
+            const returnDate = document.getElementById('return-date').value;
+
+            if (!pickupDate || !returnDate) {
+                showToast('Please select both pickup and return dates', 'error');
+                return;
+            }
+
+            const pickup = new Date(pickupDate);
+            const returnD = new Date(returnDate);
+            const days = Math.ceil((returnD - pickup) / (1000 * 60 * 60 * 24));
+
+            if (days <= 0) {
+                showToast('Return date must be after pickup date', 'error');
+                return;
+            }
+
+            // Check availability for the selected dates
+            const conflictingBooking = bookings.find(booking => 
+                booking.vehicleId === currentVehicle.id &&
+                booking.status !== 'cancelled' &&
+                ((new Date(booking.pickupDate) <= returnD && new Date(booking.returnDate) >= pickup))
+            );
+
+            if (conflictingBooking) {
+                showToast('Vehicle is not available for the selected dates', 'error');
+                return;
+            }
+
+            const total = days * currentVehicle.price;
+            const newBooking = {
+                id: nextBookingId++,
+                userId: currentUser.id,
+                vehicleId: currentVehicle.id,
+                vehicleName: currentVehicle.name,
+                pickupDate,
+                returnDate,
+                days,
+                totalCost: total,
+                status: 'confirmed',
+                createdAt: new Date().toISOString()
+            };
+
+            bookings.push(newBooking);
+            closeBookingModal();
+            showToast('Booking confirmed! Pay on pickup.', 'success');
+            
+            // Clear form
+            document.getElementById('pickup-date').value = '';
+            document.getElementById('return-date').value = '';
+        }
+
+        function closeBookingModal() {
+            document.getElementById('booking-modal').classList.add('hidden');
+            currentVehicle = null;
+        }
+
+        // User dashboard
+        function renderUserBookings() {
+            const userBookingsDiv = document.getElementById('user-bookings');
+            const userBookings = bookings.filter(booking => booking.userId === currentUser.id);
+
+            if (userBookings.length === 0) {
+                userBookingsDiv.innerHTML = '<div class="text-center py-12 text-gray-500">No bookings found. <button onclick="showPage(\'home\')" class="text-blue-600 hover:underline">Browse vehicles</button> to make your first booking!</div>';
+                return;
+            }
+
+            userBookingsDiv.innerHTML = userBookings.map(booking => `
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">${booking.vehicleName}</h3>
+                            <div class="text-gray-600 space-y-1">
+                                <div>Pickup: ${new Date(booking.pickupDate).toLocaleDateString()}</div>
+                                <div>Return: ${new Date(booking.returnDate).toLocaleDateString()}</div>
+                                <div>Duration: ${booking.days} day${booking.days > 1 ? 's' : ''}</div>
+                                <div>Total Cost: $${booking.totalCost}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                                booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                            }">${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
+                            <div class="text-sm text-gray-500 mt-2">
+                                Booked: ${new Date(booking.createdAt).toLocaleDateString()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Admin functions
+        function renderAdminContent() {
+            renderAdminVehicles();
+            renderAdminBookings();
+        }
+
+        function showAdminTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.admin-tab').forEach(tab => {
+                tab.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active', 'border-blue-500', 'text-blue-600');
+            document.getElementById(`tab-${tabName}`).classList.remove('border-transparent', 'text-gray-500');
+
+            // Show/hide content
+            document.querySelectorAll('.admin-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`admin-${tabName}`).classList.remove('hidden');
+        }
+
+        function renderAdminVehicles() {
+            const adminVehicleList = document.getElementById('admin-vehicle-list');
+            
+            adminVehicleList.innerHTML = vehicles.map(vehicle => `
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="text-4xl text-center mb-4">${vehicle.image}</div>
+                    <h3 class="text-lg font-semibold mb-2">${vehicle.name}</h3>
+                    <div class="text-sm text-gray-600 space-y-1 mb-4">
+                        <div>Type: <span class="capitalize">${vehicle.type}</span></div>
+                        <div>Location: <span class="capitalize">${vehicle.location}</span></div>
+                        <div>Price: $${vehicle.price}/day</div>
+                        <div>Status: <span class="${vehicle.available ? 'text-green-600' : 'text-red-600'}">${vehicle.available ? 'Available' : 'Unavailable'}</span></div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="toggleVehicleAvailability(${vehicle.id})" class="flex-1 ${vehicle.available ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white py-2 px-3 rounded text-sm">
+                            ${vehicle.available ? 'Mark Unavailable' : 'Mark Available'}
+                        </button>
+                        <button onclick="deleteVehicle(${vehicle.id})" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-3 rounded text-sm">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminBookings() {
+            const adminBookingList = document.getElementById('admin-booking-list');
+            
+            if (bookings.length === 0) {
+                adminBookingList.innerHTML = '<div class="text-center py-12 text-gray-500">No bookings found.</div>';
+                return;
+            }
+
+            adminBookingList.innerHTML = bookings.map(booking => {
+                const user = users.find(u => u.id === booking.userId);
+                return `
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <h4 class="font-semibold">${booking.vehicleName}</h4>
+                                <div class="text-sm text-gray-600">
+                                    <div>Customer: ${user ? user.name : 'Unknown'}</div>
+                                    <div>Email: ${user ? user.email : 'Unknown'}</div>
+                                    <div>Phone: ${user ? user.phone : 'Unknown'}</div>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <div>Pickup: ${new Date(booking.pickupDate).toLocaleDateString()}</div>
+                                <div>Return: ${new Date(booking.returnDate).toLocaleDateString()}</div>
+                                <div>Duration: ${booking.days} day${booking.days > 1 ? 's' : ''}</div>
+                                <div>Total: $${booking.totalCost}</div>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                                    booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                    booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                }">${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
+                                <div class="text-sm text-gray-500 mt-2">
+                                    Booked: ${new Date(booking.createdAt).toLocaleDateString()}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showAddVehicleModal() {
+            document.getElementById('add-vehicle-modal').classList.remove('hidden');
+        }
+
+        function closeAddVehicleModal() {
+            document.getElementById('add-vehicle-modal').classList.add('hidden');
+            // Clear form
+            document.getElementById('vehicle-name').value = '';
+            document.getElementById('vehicle-type').value = 'car';
+            document.getElementById('vehicle-location').value = 'downtown';
+            document.getElementById('vehicle-price').value = '';
+            document.getElementById('vehicle-description').value = '';
+        }
+
+        function handleAddVehicle(event) {
+            event.preventDefault();
+            const name = document.getElementById('vehicle-name').value;
+            const type = document.getElementById('vehicle-type').value;
+            const location = document.getElementById('vehicle-location').value;
+            const price = parseInt(document.getElementById('vehicle-price').value);
+            const description = document.getElementById('vehicle-description').value;
+
+            const newVehicle = {
+                id: nextVehicleId++,
+                name,
+                type,
+                location,
+                price,
+                description,
+                available: true,
+                image: type === 'car' ? '🚗' : '🏍️'
+            };
+
+            vehicles.push(newVehicle);
+            closeAddVehicleModal();
+            renderAdminVehicles();
+            renderVehicles(); // Update main vehicle list
+            showToast('Vehicle added successfully!', 'success');
+        }
+
+        function toggleVehicleAvailability(vehicleId) {
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            if (vehicle) {
+                vehicle.available = !vehicle.available;
+                renderAdminVehicles();
+                renderVehicles(); // Update main vehicle list
+                showToast(`Vehicle marked as ${vehicle.available ? 'available' : 'unavailable'}`, 'success');
+            }
+        }
+
+        function deleteVehicle(vehicleId) {
+            // Create custom confirmation dialog
+            const confirmDiv = document.createElement('div');
+            confirmDiv.className = 'fixed inset-0 modal-backdrop z-50';
+            confirmDiv.innerHTML = `
+                <div class="flex items-center justify-center min-h-screen p-4">
+                    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+                        <h3 class="text-lg font-semibold mb-4">Confirm Delete</h3>
+                        <p class="text-gray-600 mb-6">Are you sure you want to delete this vehicle? This action cannot be undone.</p>
+                        <div class="flex justify-end space-x-3">
+                            <button onclick="this.closest('.modal-backdrop').remove()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button onclick="confirmDeleteVehicle(${vehicleId}); this.closest('.modal-backdrop').remove()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmDiv);
+        }
+
+        function confirmDeleteVehicle(vehicleId) {
+            vehicles = vehicles.filter(v => v.id !== vehicleId);
+            renderAdminVehicles();
+            renderVehicles(); // Update main vehicle list
+            showToast('Vehicle deleted successfully', 'success');
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `px-6 py-4 rounded-lg shadow-lg text-white max-w-sm ${
+                type === 'success' ? 'bg-green-500' :
+                type === 'error' ? 'bg-red-500' :
+                type === 'warning' ? 'bg-yellow-500' :
+                'bg-blue-500'
+            } fade-in`;
+            toast.textContent = message;
+
+            document.getElementById('toast-container').appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9936ce0c77a754a9',t:'MTc2MTI4MDkxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
