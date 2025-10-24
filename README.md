@@ -1,11 +1,11 @@
-# 🚗 Vehicle Rental Management Web App (Frontend MVP)
+#  Vehicle Rental Management Web App (Frontend MVP)
 
 This is a **frontend-only MVP** (Minimum Viable Product) for a **Vehicle Rental Management System**.  
 It’s a static web app built using **HTML, CSS, and basic JavaScript (optional)** to demonstrate the user interface and core flow of a vehicle rental platform.
 
 ---
 
-## 📖 Overview
+## Overview
 
 The app simulates a simple online vehicle rental experience where users can:
 
@@ -19,5 +19,4 @@ This MVP focuses **only on frontend UI and layout** — it does not yet include 
 
 ---
 
-## 🧱 Folder Structure
 
